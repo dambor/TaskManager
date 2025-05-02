@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .task-card {
+            transition: all 0.3s ease;
+            border-left: 5px solid #ccc;
+        }
+        .task-card.todo {
+            border-left-color: #0d6efd;
+        }
+        .task-card.inprogress {
+            border-left-color: #ffc107;
+        }
+        .task-card.done {
+            border-left-color: #198754;
+        }
+        .task-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .status-column {
+            min-height: 300px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .api-url-form {
+            max-width: 600px;
+            margin: 0 auto 20px;
+        }
+        .debug-panel {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        pre {
+            background-color: #eee;
+            padding: 10px;
+            border-radius: 5px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">Task Manager</h1>
+        
+        <div class="api-url-form">
+            <div class="input-group mb-3">
+                <span class="input-group-text">API Base URL</span>
+                <input type="text" id="apiBaseInput" class="form-control" value="http://localhost:5173" placeholder="Enter your API base URL here">
+            </div>
+            <div class="input-group mb-3">
+                <span class="input-group-text">Tasks Endpoint</span>
+                <input type="text" id="tasksEndpointInput" class="form-control" value="/api/tasks" placeholder="Enter your tasks endpoint here">
+                <button class="btn btn-primary" onclick="saveApiSettings()">Save</button>
+            </div>
+            <div class="alert alert-info">
+                <small>Enter your API settings above and click Save. Default is http://localhost:5173/api/tasks</small>
+            </div>
+
+            <!-- Debug Panel to help troubleshoot API issues -->
+            <div class="debug-panel">
+                <h5>API Debugging</h5>
+                <div class="d-flex mb-2">
+                    <button class="btn btn-sm btn-outline-primary me-2" onclick="testApiConnection()">Test API Connection</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="viewSwagger()">Open Swagger</button>
+                </div>
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="debugModeSwitch" checked>
+                    <label class="form-check-label" for="debugModeSwitch">Debug Mode</label>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Request Model Format</label>
+                    <select class="form-select" id="requestFormatSelect">
+                        <option value="standard">Standard</option>
+                        <option value="camelCase">camelCase</option>
+                        <option value="minimal">Minimal</option>
+                        <option value="snake_case">snake_case</option>
+                    </select>
+                </div>
+                <div id="debugOutput" class="border p-2 bg-light" style="min-height: 100px; max-height: 200px; overflow-y: auto;">
+                    Debug output will appear here...
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end mb-3">
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#taskModal" onclick="prepareAddTask()">
+                <i class="bi bi-plus-circle"></i> Add Task
+            </button>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">To Do</h5>
+                    </div>
+                    <div class="card-body status-column p-2" id="todo-tasks">
+                        <!-- Tasks will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">In Progress</h5>
+                    </div>
+                    <div class="card-body status-column p-2" id="inprogress-tasks">
+                        <!-- Tasks will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Done</h5>
+                    </div>
+                    <div class="card-body status-column p-2" id="done-tasks">
+                        <!-- Tasks will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div class="modal fade" id="taskModal" tabindex="-1" aria-labelledby="taskModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="taskModalLabel">Add Task</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="taskForm">
+                        <input type="hidden" id="taskId">
+                        <div class="mb-3">
+                            <label for="taskTitle" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="taskTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="taskDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="taskDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="taskDueDate" class="form-label">Due Date</label>
+                            <input type="datetime-local" class="form-control" id="taskDueDate">
+                        </div>
+                        <div class="mb-3">
+                            <label for="taskStatus" class="form-label">Status</label>
+                            <select class="form-control" id="taskStatus">
+                                <option value="0">To Do</option>
+                                <option value="1">In Progress</option>
+                                <option value="2">Done</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="taskAssignee" class="form-label">Assigned To</label>
+                            <input type="text" class="form-control" id="taskAssignee">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveTask()">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete this task?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Request Preview Modal -->
+    <div class="modal fade" id="requestPreviewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Request Preview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>Request URL</h6>
+                    <pre id="previewUrl"></pre>
+                    <h6>Request Body</h6>
+                    <pre id="previewBody"></pre>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="sendRequestBtn">Send Request</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast for notifications -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 5">
+        <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto" id="toastTitle">Notification</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toastMessage">
+                Hello, world! This is a toast message.
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let apiBaseUrl = localStorage.getItem('apiBaseUrl') || 'http://localhost:5173';
+        let tasksEndpoint = localStorage.getItem('tasksEndpoint') || '/api/tasks';
+        let requestFormat = localStorage.getItem('requestFormat') || 'standard';
+        let taskToDelete = null;
+        let debugMode = localStorage.getItem('debugMode') === 'true' || true;
+        let currentRequestData = null;
+        let currentRequestUrl = null;
+        let currentRequestMethod = null;
+        
+        const taskModal = new bootstrap.Modal(document.getElementById('taskModal'));
+        const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+        const requestPreviewModal = new bootstrap.Modal(document.getElementById('requestPreviewModal'));
+        const toast = new bootstrap.Toast(document.getElementById('toast'));
+
+        // Load settings from localStorage
+        document.getElementById('apiBaseInput').value = apiBaseUrl;
+        document.getElementById('tasksEndpointInput').value = tasksEndpoint;
+        document.getElementById('debugModeSwitch').checked = debugMode;
+        document.getElementById('requestFormatSelect').value = requestFormat;
+
+        // Save API settings to localStorage
+        function saveApiSettings() {
+            apiBaseUrl = document.getElementById('apiBaseInput').value.trim();
+            tasksEndpoint = document.getElementById('tasksEndpointInput').value.trim();
+            requestFormat = document.getElementById('requestFormatSelect').value;
+            
+            // Remove trailing slash from base URL if present
+            if (apiBaseUrl.endsWith('/')) {
+                apiBaseUrl = apiBaseUrl.slice(0, -1);
+            }
+            
+            // Add leading slash to endpoint if missing
+            if (!tasksEndpoint.startsWith('/')) {
+                tasksEndpoint = '/' + tasksEndpoint;
+            }
+            
+            localStorage.setItem('apiBaseUrl', apiBaseUrl);
+            localStorage.setItem('tasksEndpoint', tasksEndpoint);
+            localStorage.setItem('requestFormat', requestFormat);
+            
+            debugMode = document.getElementById('debugModeSwitch').checked;
+            localStorage.setItem('debugMode', debugMode);
+            
+            showToast('Success', 'API settings saved');
+            logDebug(`API URL set to: ${apiBaseUrl}${tasksEndpoint}, Format: ${requestFormat}`);
+            loadTasks();
+        }
+
+        // Debug logging
+        function logDebug(message, data) {
+            if (debugMode || data) {
+                const debugOutput = document.getElementById('debugOutput');
+                const timestamp = new Date().toLocaleTimeString();
+                let logMessage = `[${timestamp}] ${message}`;
+                
+                debugOutput.innerHTML = logMessage + '<br>' + debugOutput.innerHTML;
+                
+                if (data) {
+                    console.log(message, data);
+                    if (typeof data === 'object') {
+                        try {
+                            const jsonStr = JSON.stringify(data, null, 2);
+                            debugOutput.innerHTML = `[${timestamp}] ${message}<br><pre>${jsonStr}</pre>` + debugOutput.innerHTML;
+                        } catch (e) {
+                            debugOutput.innerHTML = `[${timestamp}] ${message} (Object couldn't be stringified)` + '<br>' + debugOutput.innerHTML;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Test connection to API
+        function testApiConnection() {
+            const url = `${apiBaseUrl}${tasksEndpoint}`;
+            logDebug(`Testing connection to: ${url}`);
+            
+            fetch(url)
+                .then(response => {
+                    logDebug(`Response status: ${response.status} ${response.statusText}`);
+                    if (!response.ok) {
+                        showToast('Error', `Connection failed with status: ${response.status}`);
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    showToast('Success', 'API connection successful');
+                    return response.json();
+                })
+                .then(data => {
+                    logDebug('Data received:', data);
+                })
+                .catch(error => {
+                    logDebug(`Error: ${error.message}`);
+                    showToast('Error', `Connection failed: ${error.message}`);
+                });
+        }
+
+        // Open Swagger UI
+        function viewSwagger() {
+            const swaggerUrl = `${apiBaseUrl}/swagger/index.html`;
+            window.open(swaggerUrl, '_blank');
+        }
+
+        // Prepare request data based on selected format
+
+        function prepareRequestData(task) {
+            // Set id to null for new tasks or convert to a valid Guid string for existing tasks
+            if (task.id === null || task.id === '') {
+                task.id = '00000000-0000-0000-0000-000000000000'; // Default empty GUID
+            }
+            
+            // Ensure date is in ISO format
+            if (task.dueDate) {
+                task.dueDate = new Date(task.dueDate).toISOString();
+            }
+            
+            // Ensure status is a number
+            task.status = parseInt(task.status);
+            
+            switch(requestFormat) {
+                case 'wrapped':
+                    // Wrap task in a parent object as required by the API
+                    return { task: task };
+                
+                case 'camelCase':
+                    return {
+                        id: task.id,
+                        title: task.title,
+                        description: task.description,
+                        dueDate: task.dueDate,
+                        status: task.status,
+                        assignedTo: task.assignedTo
+                    };
+                    
+                case 'minimal':
+                    // Remove null/empty values
+                    const minimalTask = {};
+                    Object.entries(task).forEach(([key, value]) => {
+                        if (value !== null && value !== '') {
+                            minimalTask[key] = value;
+                        }
+                    });
+                    return minimalTask;
+                    
+                case 'snake_case':
+                    return {
+                        id: task.id,
+                        title: task.title,
+                        description: task.description,
+                        due_date: task.dueDate,
+                        status: task.status,
+                        assigned_to: task.assignedTo
+                    };
+                    
+                case 'standard':
+                default:
+                    return task;
+            }
+        }
+
+        // Format due date for the request
+        function formatDueDateForRequest(dueDateString) {
+            if (!dueDateString) return null;
+            
+            // Format as ISO string for request
+            const dueDate = new Date(dueDateString);
+            return dueDate.toISOString();
+        }
+
+        // Load tasks from API
+        function loadTasks() {
+            clearTaskContainers();
+            const url = `${apiBaseUrl}${tasksEndpoint}`;
+            logDebug(`Loading tasks from: ${url}`);
+            
+            fetch(url)
+                .then(response => {
+                    logDebug(`Response status: ${response.status}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(tasks => {
+                    logDebug(`Received ${tasks.length} tasks`);
+                    tasks.forEach(task => addTaskToUI(task));
+                })
+                .catch(error => {
+                    console.error('Error loading tasks:', error);
+                    logDebug(`Error loading tasks: ${error.message}`);
+                    showToast('Error', 'Failed to load tasks. Check the API settings.');
+                });
+        }
+
+        // Clear all task containers
+        function clearTaskContainers() {
+            document.getElementById('todo-tasks').innerHTML = '';
+            document.getElementById('inprogress-tasks').innerHTML = '';
+            document.getElementById('done-tasks').innerHTML = '';
+        }
+
+        // Add a task to the UI
+        function addTaskToUI(task) {
+            const statusClass = task.status === 0 ? 'todo' : task.status === 1 ? 'inprogress' : 'done';
+            const dueDate = task.dueDate ? new Date(task.dueDate).toLocaleString() : 'No due date';
+            
+            const taskHtml = `
+                <div class="task-card ${statusClass} card mb-2 p-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h6 class="mb-1">${task.title}</h6>
+                        <span class="badge bg-${task.status === 0 ? 'primary' : task.status === 1 ? 'warning' : 'success'}">
+                            ${task.status === 0 ? 'Todo' : task.status === 1 ? 'In Progress' : 'Done'}
+                        </span>
+                    </div>
+                    <p class="small mb-1">${task.description || 'No description'}</p>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <small class="text-muted">${dueDate}</small>
+                        <div>
+                            <button class="btn btn-sm btn-outline-secondary me-1" onclick="editTask('${task.id}')">
+                                Edit
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete('${task.id}')">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                    ${task.assignedTo ? `<div class="mt-1"><small class="badge bg-info text-dark">Assigned to: ${task.assignedTo}</small></div>` : ''}
+                </div>
+            `;
+            
+            if (task.status === 0) {
+                document.getElementById('todo-tasks').innerHTML += taskHtml;
+            } else if (task.status === 1) {
+                document.getElementById('inprogress-tasks').innerHTML += taskHtml;
+            } else {
+                document.getElementById('done-tasks').innerHTML += taskHtml;
+            }
+        }
+
+        // Prepare the modal for adding a new task
+        function prepareAddTask() {
+            document.getElementById('taskModalLabel').textContent = 'Add Task';
+            document.getElementById('taskForm').reset();
+            document.getElementById('taskId').value = '';
+        }
+
+        // Edit an existing task
+        function editTask(taskId) {
+            const url = `${apiBaseUrl}${tasksEndpoint}/${taskId}`;
+            logDebug(`Loading task from: ${url}`);
+            
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(task => {
+                    logDebug('Task loaded:', task);
+                    document.getElementById('taskModalLabel').textContent = 'Edit Task';
+                    document.getElementById('taskId').value = task.id;
+                    document.getElementById('taskTitle').value = task.title;
+                    document.getElementById('taskDescription').value = task.description || '';
+                    document.getElementById('taskStatus').value = task.status;
+                    document.getElementById('taskAssignee').value = task.assignedTo || '';
+                    
+                    if (task.dueDate) {
+                        // Format date for datetime-local input
+                        const dueDate = new Date(task.dueDate);
+                        const formattedDate = dueDate.toISOString().slice(0, 16);
+                        document.getElementById('taskDueDate').value = formattedDate;
+                    } else {
+                        document.getElementById('taskDueDate').value = '';
+                    }
+                    
+                    taskModal.show();
+                })
+                .catch(error => {
+                    console.error('Error loading task:', error);
+                    logDebug(`Error loading task: ${error.message}`);
+                    showToast('Error', 'Failed to load task details');
+                });
+        }
+
+        // Preview request before sending
+        function previewRequest(method, url, data) {
+            document.getElementById('previewUrl').textContent = `${method} ${url}`;
+            document.getElementById('previewBody').textContent = JSON.stringify(data, null, 2);
+            
+            // Store the current request data for use when the Send button is clicked
+            currentRequestData = data;
+            currentRequestUrl = url;
+            currentRequestMethod = method;
+            
+            // Set up the send button to execute the request
+            document.getElementById('sendRequestBtn').onclick = executeRequest;
+            
+            requestPreviewModal.show();
+        }
+
+        // Execute the request after preview
+        function executeRequest() {
+            requestPreviewModal.hide();
+            
+            logDebug(`${currentRequestMethod} request to: ${currentRequestUrl}`, currentRequestData);
+            console.log(`Request method: ${currentRequestMethod}`);
+            console.log(`Request URL: ${currentRequestUrl}`);
+            console.log(`Request data:`, currentRequestData);
+            
+            fetch(currentRequestUrl, {
+                method: currentRequestMethod,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(currentRequestData)
+            })
+                .then(response => {
+                    logDebug(`Response status: ${response.status} ${response.statusText}`);
+                    
+                    if (response.status === 204) {
+                        // No content response (typical for DELETE and sometimes PUT)
+                        return null;
+                    }
+                    
+                    if (!response.ok) {
+                        // Try to get error details if available
+                        return response.text().then(text => {
+                            throw new Error(`HTTP error! Status: ${response.status}, Details: ${text || 'No details available'}`);
+                        });
+                    }
+                    
+                    // If there's content, parse it as JSON
+                    if (response.headers.get('content-length') !== '0') {
+                        return response.json();
+                    }
+                    
+                    return null;
+                })
+                .then(data => {
+                    if (data) {
+                        logDebug('Response data:', data);
+                    }
+                    
+                    taskModal.hide();
+                    loadTasks();
+                    showToast('Success', 'Operation completed successfully');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    logDebug(`Error: ${error.message}`);
+                    showToast('Error', `Failed: ${error.message}`);
+                });
+        }
+
+        // Save a task (create or update)
+        function saveTask() {
+            const taskId = document.getElementById('taskId').value;
+            const isNewTask = !taskId;
+            
+            const rawTask = {
+                id: isNewTask ? null : taskId,
+                title: document.getElementById('taskTitle').value,
+                description: document.getElementById('taskDescription').value || null,
+                dueDate: formatDueDateForRequest(document.getElementById('taskDueDate').value),
+                status: parseInt(document.getElementById('taskStatus').value),
+                assignedTo: document.getElementById('taskAssignee').value || null
+            };
+            
+            const task = prepareRequestData(rawTask);
+            
+            const method = isNewTask ? 'POST' : 'PUT';
+            const url = isNewTask ? `${apiBaseUrl}${tasksEndpoint}` : `${apiBaseUrl}${tasksEndpoint}/${taskId}`;
+            
+            // Instead of sending directly, preview first
+            previewRequest(method, url, task);
+        }
+
+        // Confirm task deletion
+        function confirmDelete(taskId) {
+            taskToDelete = taskId;
+            document.getElementById('confirmDeleteBtn').onclick = deleteTask;
+            confirmModal.show();
+        }
+
+        // Delete a task
+        function deleteTask() {
+            if (!taskToDelete) return;
+            
+            const url = `${apiBaseUrl}${tasksEndpoint}/${taskToDelete}`;
+            logDebug(`DELETE request to: ${url}`);
+            
+            confirmModal.hide();
+            
+            // Preview the DELETE request
+            previewRequest('DELETE', url, null);
+        }
+
+        // Show toast notification
+        function showToast(title, message) {
+            document.getElementById('toastTitle').textContent = title;
+            document.getElementById('toastMessage').textContent = message;
+            toast.show();
+        }
+
+        // Handle debug mode toggle
+        document.getElementById('debugModeSwitch').addEventListener('change', function() {
+            debugMode = this.checked;
+            localStorage.setItem('debugMode', debugMode);
+            logDebug(`Debug mode ${debugMode ? 'enabled' : 'disabled'}`);
+        });
+
+        // Handle request format change
+        document.getElementById('requestFormatSelect').addEventListener('change', function() {
+            requestFormat = this.value;
+            localStorage.setItem('requestFormat', requestFormat);
+            logDebug(`Request format set to: ${requestFormat}`);
+        });
+
+        // Load tasks on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            logDebug(`Starting app with API URL: ${apiBaseUrl}${tasksEndpoint}`);
+            loadTasks();
+        });
+    </script>
+</body>
+</html>

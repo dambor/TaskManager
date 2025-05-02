@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Task Manager Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Simple Task Manager Test</h1>
+        
+        <div class="card">
+            <div class="card-header">
+                Create a New Task
+            </div>
+            <div class="card-body">
+                <form id="taskForm">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-control" id="status">
+                            <option value="0">Todo</option>
+                            <option value="1">In Progress</option>
+                            <option value="2">Done</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assignedTo" class="form-label">Assigned To</label>
+                        <input type="text" class="form-control" id="assignedTo">
+                    </div>
+                    <button type="button" class="btn btn-primary" id="submitBtn">Create Task</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <div class="card">
+                <div class="card-header">
+                    API Response
+                </div>
+                <div class="card-body">
+                    <pre id="apiResponse" class="bg-light p-3">Response will appear here...</pre>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <div class="card">
+                <div class="card-header">
+                    All Tasks
+                </div>
+                <div class="card-body">
+                    <button id="loadTasksBtn" class="btn btn-secondary mb-3">Load Tasks</button>
+                    <div id="tasksList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const apiUrl = 'http://localhost:5173/api/tasks';
+        
+        document.getElementById('submitBtn').addEventListener('click', async function() {
+            const title = document.getElementById('title').value;
+            const description = document.getElementById('description').value;
+            const status = parseInt(document.getElementById('status').value);
+            const assignedTo = document.getElementById('assignedTo').value;
+            
+            // Build the payload - IMPORTANT: We're not including dueDate to avoid format issues
+            const task = {
+                title: title,
+                description: description || null,
+                status: status,
+                assignedTo: assignedTo || null
+            };
+            
+            // Show what we're sending
+            document.getElementById('apiResponse').textContent = `Sending: ${JSON.stringify(task, null, 2)}`;
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(task)
+                });
+                
+                let responseText;
+                
+                if (response.headers.get('content-length') !== '0') {
+                    responseText = await response.text();
+                } else {
+                    responseText = `Status: ${response.status} ${response.statusText}`;
+                }
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}, Details: ${responseText}`);
+                }
+                
+                document.getElementById('apiResponse').textContent = `Success: ${responseText}`;
+                document.getElementById('taskForm').reset();
+                loadTasks();
+            } catch (error) {
+                document.getElementById('apiResponse').textContent = `Error: ${error.message}`;
+                console.error('Error:', error);
+            }
+        });
+        
+        document.getElementById('loadTasksBtn').addEventListener('click', loadTasks);
+        
+        async function loadTasks() {
+            try {
+                const response = await fetch(apiUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                
+                const tasks = await response.json();
+                
+                const tasksListElement = document.getElementById('tasksList');
+                tasksListElement.innerHTML = '';
+                
+                if (tasks.length === 0) {
+                    tasksListElement.innerHTML = '<p>No tasks found.</p>';
+                    return;
+                }
+                
+                const table = document.createElement('table');
+                table.className = 'table table-striped';
+                
+                const thead = document.createElement('thead');
+                thead.innerHTML = `
+                    <tr>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th>Assigned To</th>
+                    </tr>
+                `;
+                
+                const tbody = document.createElement('tbody');
+                
+                tasks.forEach(task => {
+                    const statusText = task.status === 0 ? 'Todo' : task.status === 1 ? 'In Progress' : 'Done';
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${task.title}</td>
+                        <td>${task.description || '-'}</td>
+                        <td>${statusText}</td>
+                        <td>${task.assignedTo || '-'}</td>
+                    `;
+                    
+                    tbody.appendChild(row);
+                });
+                
+                table.appendChild(thead);
+                table.appendChild(tbody);
+                tasksListElement.appendChild(table);
+                
+            } catch (error) {
+                document.getElementById('tasksList').innerHTML = `<p class="text-danger">Error loading tasks: ${error.message}</p>`;
+                console.error('Error:', error);
+            }
+        }
+        
+        // Load tasks on page load
+        loadTasks();
+    </script>
+</body>
+</html>

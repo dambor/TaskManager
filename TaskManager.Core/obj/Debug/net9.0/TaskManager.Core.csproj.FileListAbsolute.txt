@@ -1,0 +1,11 @@
+/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Core/bin/Debug/net9.0/TaskManager.Core.deps.json
+/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Core/bin/Debug/net9.0/TaskManager.Core.dll
+/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Core/bin/Debug/net9.0/TaskManager.Core.pdb
+/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Core/obj/Debug/net9.0/TaskManager.Core.GeneratedMSBuildEditorConfig.editorconfig
+/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Core/obj/Debug/net9.0/TaskManager.Core.AssemblyInfoInputs.cache
+/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Core/obj/Debug/net9.0/TaskManager.Core.AssemblyInfo.cs
+/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Core/obj/Debug/net9.0/TaskManager.Core.csproj.CoreCompileInputs.cache
+/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Core/obj/Debug/net9.0/TaskManager.Core.dll
+/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Core/obj/Debug/net9.0/refint/TaskManager.Core.dll
+/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Core/obj/Debug/net9.0/TaskManager.Core.pdb
+/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Core/obj/Debug/net9.0/ref/TaskManager.Core.dll

@@ -1,0 +1,230 @@
+{
+  "format": 1,
+  "restore": {
+    "/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Api/TaskManager.Api.csproj": {}
+  },
+  "projects": {
+    "/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Api/TaskManager.Api.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Api/TaskManager.Api.csproj",
+        "projectName": "TaskManager.Api",
+        "projectPath": "/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Api/TaskManager.Api.csproj",
+        "packagesPath": "/Users/glenio.borges/.nuget/packages/",
+        "outputPath": "/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Api/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/glenio.borges/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "/opt/homebrew/Cellar/dotnet/9.0.4/libexec/library-packs": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "targetAlias": "net9.0",
+            "projectReferences": {
+              "/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Core/TaskManager.Core.csproj": {
+                "projectPath": "/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Core/TaskManager.Core.csproj"
+              },
+              "/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Infrastructure/TaskManager.Infrastructure.csproj": {
+                "projectPath": "/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Infrastructure/TaskManager.Infrastructure.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.100"
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "dependencies": {
+            "Microsoft.AspNetCore.OpenApi": {
+              "target": "Package",
+              "version": "[9.0.4, )"
+            },
+            "Swashbuckle.AspNetCore": {
+              "target": "Package",
+              "version": "[8.1.1, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/opt/homebrew/Cellar/dotnet/9.0.4/libexec/sdk/9.0.105/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Core/TaskManager.Core.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Core/TaskManager.Core.csproj",
+        "projectName": "TaskManager.Core",
+        "projectPath": "/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Core/TaskManager.Core.csproj",
+        "packagesPath": "/Users/glenio.borges/.nuget/packages/",
+        "outputPath": "/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Core/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/glenio.borges/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "/opt/homebrew/Cellar/dotnet/9.0.4/libexec/library-packs": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "targetAlias": "net9.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.100"
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/opt/homebrew/Cellar/dotnet/9.0.4/libexec/sdk/9.0.105/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Infrastructure/TaskManager.Infrastructure.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Infrastructure/TaskManager.Infrastructure.csproj",
+        "projectName": "TaskManager.Infrastructure",
+        "projectPath": "/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Infrastructure/TaskManager.Infrastructure.csproj",
+        "packagesPath": "/Users/glenio.borges/.nuget/packages/",
+        "outputPath": "/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Infrastructure/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/glenio.borges/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "/opt/homebrew/Cellar/dotnet/9.0.4/libexec/library-packs": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "targetAlias": "net9.0",
+            "projectReferences": {
+              "/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Core/TaskManager.Core.csproj": {
+                "projectPath": "/Users/glenio.borges/workspace/POCs/TaskManager/TaskManager.Core/TaskManager.Core.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.100"
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "dependencies": {
+            "CassandraCSharpDriver": {
+              "target": "Package",
+              "version": "[3.22.0, )"
+            },
+            "Microsoft.Extensions.Configuration": {
+              "target": "Package",
+              "version": "[9.0.4, )"
+            },
+            "Microsoft.Extensions.Configuration.Binder": {
+              "target": "Package",
+              "version": "[9.0.4, )"
+            },
+            "Microsoft.Extensions.Hosting.Abstractions": {
+              "target": "Package",
+              "version": "[9.0.4, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/opt/homebrew/Cellar/dotnet/9.0.4/libexec/sdk/9.0.105/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

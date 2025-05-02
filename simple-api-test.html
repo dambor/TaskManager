@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        pre { background-color: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input, select { width: 100%; padding: 8px; box-sizing: border-box; }
+        button { padding: 10px 15px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        .response { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Test Task API</h1>
+    
+    <div class="form-group">
+        <label for="baseUrl">API Base URL:</label>
+        <input type="text" id="baseUrl" value="http://localhost:5173" />
+    </div>
+    
+    <h2>Get All Tasks</h2>
+    <button onclick="getAllTasks()">Get All Tasks</button>
+    
+    <h2>Update Task</h2>
+    <div class="form-group">
+        <label for="taskId">Task ID:</label>
+        <input type="text" id="taskId" placeholder="Enter task ID to update" />
+    </div>
+    
+    <div class="form-group">
+        <label for="taskTitle">Title:</label>
+        <input type="text" id="taskTitle" placeholder="Enter task title" />
+    </div>
+    
+    <div class="form-group">
+        <label for="taskDescription">Description:</label>
+        <input type="text" id="taskDescription" placeholder="Enter task description" />
+    </div>
+    
+    <div class="form-group">
+        <label for="taskStatus">Status:</label>
+        <select id="taskStatus">
+            <option value="0">To Do</option>
+            <option value="1">In Progress</option>
+            <option value="2">Done</option>
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label for="taskAssignee">Assigned To:</label>
+        <input type="text" id="taskAssignee" placeholder="Enter assignee" />
+    </div>
+    
+    <button onclick="updateTask()">Update Task</button>
+    
+    <div class="response">
+        <h3>Response:</h3>
+        <pre id="response">Response will appear here...</pre>
+    </div>
+    
+    <div class="response">
+        <h3>Request Details:</h3>
+        <pre id="requestDetails">Request details will appear here...</pre>
+    </div>
+    
+    <script>
+        async function getAllTasks() {
+            const baseUrl = document.getElementById('baseUrl').value;
+            const url = `${baseUrl}/api/tasks`;
+            
+            document.getElementById('requestDetails').textContent = `GET ${url}`;
+            
+            try {
+                const response = await fetch(url);
+                const responseText = await response.text();
+                
+                document.getElementById('response').textContent = 
+                    `Status: ${response.status} ${response.statusText}\n\n${responseText}`;
+                
+                if (response.ok) {
+                    const tasks = JSON.parse(responseText);
+                    if (tasks.length > 0 && tasks[0].id) {
+                        document.getElementById('taskId').value = tasks[0].id;
+                        document.getElementById('taskTitle').value = tasks[0].title || '';
+                        document.getElementById('taskDescription').value = tasks[0].description || '';
+                        document.getElementById('taskStatus').value = tasks[0].status || 0;
+                        document.getElementById('taskAssignee').value = tasks[0].assignedTo || '';
+                    }
+                }
+            } catch (error) {
+                document.getElementById('response').textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        async function updateTask() {
+            const baseUrl = document.getElementById('baseUrl').value;
+            const taskId = document.getElementById('taskId').value;
+            
+            if (!taskId) {
+                document.getElementById('response').textContent = 'Please enter a task ID';
+                return;
+            }
+            
+            const task = {
+                id: taskId,
+                title: document.getElementById('taskTitle').value,
+                description: document.getElementById('taskDescription').value || null,
+                status: parseInt(document.getElementById('taskStatus').value),
+                assignedTo: document.getElementById('taskAssignee').value || null
+            };
+            
+            // Try different URL formats
+            tryUpdateWithUrls(baseUrl, taskId, task);
+        }
+        
+        async function tryUpdateWithUrls(baseUrl, taskId, task) {
+            const urls = [
+                `${baseUrl}/api/tasks/${taskId}`,
+                `${baseUrl}/api/Tasks/${taskId}`,
+                `${baseUrl}/tasks/${taskId}`,
+                `${baseUrl}/Tasks/${taskId}`
+            ];
+            
+            let results = '';
+            
+            for (const url of urls) {
+                results += `Trying URL: ${url}\n`;
+                try {
+                    const requestDetails = {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(task)
+                    };
+                    
+                    document.getElementById('requestDetails').textContent = 
+                        `PUT ${url}\n\nHeaders: ${JSON.stringify(requestDetails.headers, null, 2)}\n\nBody: ${JSON.stringify(task, null, 2)}`;
+                    
+                    const response = await fetch(url, requestDetails);
+                    const responseText = await response.text() || '(No response body)';
+                    
+                    results += `Status: ${response.status} ${response.statusText}\n`;
+                    results += `Response: ${responseText}\n\n`;
+                    
+                    if (response.ok) {
+                        results += '✅ SUCCESS!\n\n';
+                        document.getElementById('response').textContent = results;
+                        return;
+                    }
+                } catch (error) {
+                    results += `Error: ${error.message}\n\n`;
+                }
+            }
+            
+            document.getElementById('response').textContent = results;
+        }
+    </script>
+</body>
+</html>

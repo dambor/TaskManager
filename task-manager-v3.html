@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager with Preserved Assignee</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .task-card {
+            transition: all 0.3s ease;
+            border-left: 5px solid #ccc;
+        }
+        .task-card.todo {
+            border-left-color: #0d6efd;
+        }
+        .task-card.inprogress {
+            border-left-color: #ffc107;
+        }
+        .task-card.done {
+            border-left-color: #198754;
+        }
+        .task-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .status-column {
+            min-height: 300px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">Task Manager</h1>
+        
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">API Configuration</h5>
+            </div>
+            <div class="card-body">
+                <div class="input-group mb-3">
+                    <span class="input-group-text">API URL</span>
+                    <input type="text" id="apiUrlInput" class="form-control" value="http://localhost:5173/api/tasks" placeholder="Enter your API URL here">
+                    <button class="btn btn-primary" onclick="saveApiUrl()">Save</button>
+                </div>
+                <div class="alert alert-info">
+                    <small>Tip: Make sure your API URL is correct. Current value works with taskController routes "api/[controller]"</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end mb-3">
+            <button class="btn btn-success" onclick="prepareAddTask()">
+                <i class="bi bi-plus-circle"></i> Add Task
+            </button>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">To Do</h5>
+                    </div>
+                    <div class="card-body status-column p-2" id="todo-tasks">
+                        <!-- Tasks will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">In Progress</h5>
+                    </div>
+                    <div class="card-body status-column p-2" id="inprogress-tasks">
+                        <!-- Tasks will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Done</h5>
+                    </div>
+                    <div class="card-body status-column p-2" id="done-tasks">
+                        <!-- Tasks will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Debug Panel -->
+        <div class="mt-4 mb-5">
+            <div class="card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Debug Console</h5>
+                    <button class="btn btn-sm btn-outline-light" onclick="clearDebug()">Clear</button>
+                </div>
+                <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                    <pre id="debugOutput" class="mb-0" style="white-space: pre-wrap;">Debug output will appear here...</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="taskModalLabel">Add Task</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="taskForm">
+                        <input type="hidden" id="taskId">
+                        <input type="hidden" id="originalAssignee">
+                        <div class="mb-3">
+                            <label for="taskTitle" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="taskTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="taskDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="taskDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="taskStatus" class="form-label">Status</label>
+                            <select class="form-control" id="taskStatus">
+                                <option value="0">To Do</option>
+                                <option value="1">In Progress</option>
+                                <option value="2">Done</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="taskAssignee" class="form-label">Assigned To</label>
+                            <input type="text" class="form-control" id="taskAssignee">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveTask()">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete this task?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global variables
+        let apiUrl = localStorage.getItem('apiUrl') || 'http://localhost:5173/api/tasks';
+        let taskToDelete = null;
+        let tasksCache = [];
+        
+        // Initialize Bootstrap components
+        const taskModal = new bootstrap.Modal(document.getElementById('taskModal'));
+        const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+        
+        // Load API URL from localStorage
+        document.getElementById('apiUrlInput').value = apiUrl;
+        
+        // Debug functions
+        function logDebug(message, data = null) {
+            const debugOutput = document.getElementById('debugOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            let logMessage = `[${timestamp}] ${message}`;
+            
+            if (data) {
+                try {
+                    const jsonStr = JSON.stringify(data, null, 2);
+                    logMessage += `\n${jsonStr}`;
+                } catch (e) {
+                    logMessage += `\n[Object could not be stringified]`;
+                }
+            }
+            
+            debugOutput.innerHTML = logMessage + '\n\n' + debugOutput.innerHTML;
+        }
+        
+        function clearDebug() {
+            document.getElementById('debugOutput').innerHTML = 'Debug output cleared.';
+        }
+        
+        // Save API URL to localStorage
+        function saveApiUrl() {
+            apiUrl = document.getElementById('apiUrlInput').value.trim();
+            localStorage.setItem('apiUrl', apiUrl);
+            logDebug(`API URL saved: ${apiUrl}`);
+            loadTasks();
+        }
+        
+        // Load tasks from API
+        function loadTasks() {
+            clearTaskContainers();
+            logDebug(`Loading tasks from: ${apiUrl}`);
+            
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(tasks => {
+                    tasksCache = tasks; // Cache tasks for later use
+                    logDebug(`Loaded ${tasks.length} tasks`);
+                    tasks.forEach(task => addTaskToUI(task));
+                })
+                .catch(error => {
+                    logDebug(`Error loading tasks: ${error.message}`);
+                    alert(`Failed to load tasks: ${error.message}`);
+                });
+        }
+        
+        // Clear all task containers
+        function clearTaskContainers() {
+            document.getElementById('todo-tasks').innerHTML = '';
+            document.getElementById('inprogress-tasks').innerHTML = '';
+            document.getElementById('done-tasks').innerHTML = '';
+        }
+        
+        // Add a task to the UI
+        function addTaskToUI(task) {
+            const statusClass = task.status === 0 ? 'todo' : task.status === 1 ? 'inprogress' : 'done';
+            const dueDate = task.dueDate ? new Date(task.dueDate).toLocaleString() : 'No due date';
+            
+            const taskHtml = `
+                <div class="task-card ${statusClass} card mb-2 p-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h6 class="mb-1">${task.title}</h6>
+                        <span class="badge bg-${task.status === 0 ? 'primary' : task.status === 1 ? 'warning' : 'success'}">
+                            ${task.status === 0 ? 'Todo' : task.status === 1 ? 'In Progress' : 'Done'}
+                        </span>
+                    </div>
+                    <p class="small mb-1">${task.description || 'No description'}</p>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <div>
+                            ${task.assignedTo ? `<span class="badge bg-info text-dark">Assigned to: ${task.assignedTo}</span>` : ''}
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-outline-secondary me-1" onclick="editTask('${task.id}')">
+                                Edit
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete('${task.id}')">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            if (task.status === 0) {
+                document.getElementById('todo-tasks').innerHTML += taskHtml;
+            } else if (task.status === 1) {
+                document.getElementById('inprogress-tasks').innerHTML += taskHtml;
+            } else {
+                document.getElementById('done-tasks').innerHTML += taskHtml;
+            }
+        }
+        
+        // Prepare the modal for adding a new task
+        function prepareAddTask() {
+            document.getElementById('taskModalLabel').textContent = 'Add Task';
+            document.getElementById('taskForm').reset();
+            document.getElementById('taskId').value = '';
+            document.getElementById('originalAssignee').value = '';
+            taskModal.show();
+        }
+        
+        // Edit an existing task
+        function editTask(taskId) {
+            const task = tasksCache.find(t => t.id === taskId);
+            
+            if (!task) {
+                logDebug(`Task with ID ${taskId} not found in cache, fetching from API`);
+                
+                fetch(`${apiUrl}/${taskId}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(task => {
+                        populateTaskForm(task);
+                    })
+                    .catch(error => {
+                        logDebug(`Error loading task: ${error.message}`);
+                        alert(`Failed to load task: ${error.message}`);
+                    });
+            } else {
+                logDebug(`Editing task from cache: ${task.title}`);
+                populateTaskForm(task);
+            }
+        }
+        
+        // Populate the task form with task data
+        function populateTaskForm(task) {
+            document.getElementById('taskModalLabel').textContent = 'Edit Task';
+            document.getElementById('taskId').value = task.id;
+            document.getElementById('taskTitle').value = task.title || '';
+            document.getElementById('taskDescription').value = task.description || '';
+            document.getElementById('taskStatus').value = task.status;
+            document.getElementById('taskAssignee').value = task.assignedTo || '';
+            document.getElementById('originalAssignee').value = task.assignedTo || ''; // Store original assignee
+            
+            taskModal.show();
+        }
+        
+        // Save a task (create or update)
+        function saveTask() {
+            const taskId = document.getElementById('taskId').value;
+            const isNewTask = !taskId;
+            const originalAssignee = document.getElementById('originalAssignee').value;
+            const newAssignee = document.getElementById('taskAssignee').value;
+            
+            // Use the original assignee if the field was cleared
+            const finalAssignee = newAssignee.trim() === '' ? originalAssignee : newAssignee;
+            
+            // Create task object - FIXED to match expected format
+            let task = {
+                title: document.getElementById('taskTitle').value,
+                description: document.getElementById('taskDescription').value || null,
+                status: parseInt(document.getElementById('taskStatus').value),
+                assignedTo: finalAssignee || null
+            };
+            
+            // Only add ID for existing tasks, omit completely for new tasks
+            if (!isNewTask) {
+                task.id = taskId;
+            }
+            
+            const method = isNewTask ? 'POST' : 'PUT';
+            const url = isNewTask ? apiUrl : `${apiUrl}/${taskId}`;
+            
+            logDebug(`${method} request to: ${url}`, task);
+            
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(task)
+            })
+                .then(async response => {
+                    const responseText = await response.text();
+                    logDebug(`Response status: ${response.status}, body: ${responseText}`);
+                    
+                    if (response.ok) {
+                        logDebug(`Task ${isNewTask ? 'created' : 'updated'} successfully`);
+                        taskModal.hide();
+                        loadTasks();
+                    } else {
+                        // Try to parse response as JSON
+                        let errorDetails = responseText;
+                        try {
+                            if (responseText) {
+                                const errorJson = JSON.parse(responseText);
+                                errorDetails = JSON.stringify(errorJson, null, 2);
+                            }
+                        } catch (e) {
+                            // If not JSON, use as-is
+                        }
+                        
+                        logDebug(`Error details: ${errorDetails}`);
+                        
+                        // Despite error, the update might have worked - reload tasks
+                        if (method === 'PUT' && (response.status === 404 || response.status === 500)) {
+                            logDebug("404/500 received, but update may have worked. Reloading tasks...");
+                            taskModal.hide();
+                            loadTasks();
+                        } else if (method === 'POST' && response.status === 400) {
+                            // Show detailed error for 400 Bad Request
+                            alert(`Failed to create task (400 Bad Request). See debug console for details.`);
+                        } else {
+                            alert(`Failed to ${isNewTask ? 'create' : 'update'} task: ${response.status} ${response.statusText}`);
+                        }
+                    }
+                })
+                .catch(error => {
+                    logDebug(`Network error: ${error.message}`);
+                    alert(`Network error: ${error.message}`);
+                });
+        }
+        
+        // Confirm task deletion
+        function confirmDelete(taskId) {
+            taskToDelete = taskId;
+            document.getElementById('confirmDeleteBtn').onclick = deleteTask;
+            confirmModal.show();
+        }
+        
+        // Delete a task
+        function deleteTask() {
+            if (!taskToDelete) return;
+            
+            const url = `${apiUrl}/${taskToDelete}`;
+            logDebug(`DELETE request to: ${url}`);
+            
+            fetch(url, {
+                method: 'DELETE'
+            })
+                .then(async response => {
+                    const responseText = await response.text();
+                    logDebug(`Delete response status: ${response.status}, body: ${responseText}`);
+                    confirmModal.hide();
+                    
+                    if (response.ok || response.status === 404) {
+                        // Even if 404, we assume deletion was intended
+                        loadTasks();
+                    } else {
+                        // Try to parse response as JSON
+                        let errorDetails = responseText;
+                        try {
+                            if (responseText) {
+                                const errorJson = JSON.parse(responseText);
+                                errorDetails = JSON.stringify(errorJson, null, 2);
+                            }
+                        } catch (e) {
+                            // If not JSON, use as-is
+                        }
+                        
+                        logDebug(`Error details: ${errorDetails}`);
+                        alert(`Failed to delete task: ${response.status} ${response.statusText}`);
+                    }
+                })
+                .catch(error => {
+                    logDebug(`Network error: ${error.message}`);
+                    alert(`Network error: ${error.message}`);
+                    confirmModal.hide();
+                });
+        }
+        
+        // Load tasks on page load
+        document.addEventListener('DOMContentLoaded', loadTasks);
+    </script>
+</body>
+</html>
